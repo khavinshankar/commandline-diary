@@ -4,8 +4,12 @@
   "description": "basic commandline tool to keep a diary",
   "main": "diary.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node diary.js",
+    "build": "nexe diary.js"
   },
   "author": "khavinshankar",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "nexe": "^3.3.7"
+  }
 }
