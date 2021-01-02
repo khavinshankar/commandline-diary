@@ -2,13 +2,12 @@ const fs = require("fs");
 const path = require("path");
 
 const date = new Date();
-const today = `${date.getDate()}-${date.getMonth()+1}-${date.getFullYear()}`;
+const today = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
 const now = `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
 
 const args = process.argv.slice(2);
 
 const operation = args.length === 0 ? "help" : args.shift();
-console.log(args);
 
 let reply = null;
 switch (operation) {
@@ -22,16 +21,18 @@ switch (operation) {
     reply = log(...args);
     break;
   case "cng":
-    cng(...args);
+    reply = cng(...args);
     break;
   case "del":
-    del(...args);
+    reply = del(...args);
     break;
   default:
-    console.log('ERROR: unidentified operation, try `diary help` for more info');
+    console.log(
+      "ERROR: unidentified operation, try `diary help` for more info"
+    );
 }
 
-console.log(reply);
+if (reply !== null && reply !== undefined) console.log(reply);
 
 function help() {
   const info = `Usage :-
@@ -54,9 +55,9 @@ function help() {
   console.log(info);
 }
 
-function add(content, date=today, time=now) {
-  if(content === undefined) return `ERROR: content not availabe`;
-  
+function add(content, date = today, time = now) {
+  if (content === undefined) return `ERROR: content not availabe`;
+
   const [day, month, year] = date.split("-");
   const y_dir = path.join(__dirname, `${year}`);
   const m_dir = path.join(y_dir, `${month}`);
@@ -70,22 +71,45 @@ function add(content, date=today, time=now) {
   return `Entry added successfully :)`;
 }
 
-function log(date=today, index=0) {
+function log(date = today, index = 0) {
   const [day, month, year] = date.split("-");
   const y_dir = path.join(__dirname, `${year}`);
   const m_dir = path.join(y_dir, `${month}`);
   const file = path.join(m_dir, `${day}.txt`);
   if (fs.existsSync(file)) {
     const entries = fs.readFileSync(file, "utf-8").trim().split("\n");
-    if(index > entries.length) return `Error: index out of bounds`;
+    if (index > entries.length) return `Error: index out of bounds`;
 
     let result = "";
-    if(index == 0) for(let i=0; i<entries.length; i++) result += `<${i+1}> ${entries[i]}\n`;
-    else result = entries[index-1];
+    if (index == 0)
+      for (let i = 0; i < entries.length; i++)
+        result += `<${i + 1}> ${entries[i]}\n`;
+    else result = entries[index - 1];
 
     return result;
   } else return `Sorry, no entries found on ${date} :(`;
 }
 
 // diary del date [index]
+function del(date = today, index = 0) {
+  const [day, month, year] = date.split("-");
+  const y_dir = path.join(__dirname, `${year}`);
+  const m_dir = path.join(y_dir, `${month}`);
+  const file = path.join(m_dir, `${day}.txt`);
+  if (fs.existsSync(file)) {
+    const entries = fs.readFileSync(file, "utf-8").trim().split("\n");
+    if (index > entries.length) return `Error: index out of bounds`;
+
+    if (index === 0) {
+      fs.unlinkSync(file);
+      return `Successfully deleted all entries on ${date}`;
+    } else {
+      entries.splice(index - 1, 1);
+      const data = entries.join("\n");
+      fs.writeFileSync(file, data);
+      return `Successfully deleted the entry ${index} on ${date}`;
+    }
+  } else return `Sorry, no entries found on ${date} :(`;
+}
+
 // diary cng date index "new content"
