@@ -90,7 +90,6 @@ function log(date = today, index = 0) {
   } else return `Sorry, no entries found on ${date} :(`;
 }
 
-// diary del date [index]
 function del(date = today, index = 0) {
   const [day, month, year] = date.split("-");
   const y_dir = path.join(__dirname, `${year}`);
@@ -112,4 +111,19 @@ function del(date = today, index = 0) {
   } else return `Sorry, no entries found on ${date} :(`;
 }
 
-// diary cng date index "new content"
+function cng(date, index, new_content) {
+  const [day, month, year] = date.split("-");
+  const y_dir = path.join(__dirname, `${year}`);
+  const m_dir = path.join(y_dir, `${month}`);
+  const file = path.join(m_dir, `${day}.txt`);
+  if (fs.existsSync(file)) {
+    const entries = fs.readFileSync(file, "utf-8").trim().split("\n");
+    if (index > entries.length) return `Error: index out of bounds`;
+
+    const [time, content] = entries[index-1].split("] ");
+    entries[index-1] = `${time}] ${new_content}`;
+    const data = entries.join("\n");
+    fs.writeFileSync(file, data);
+    return `Successfully changed the entry ${index} on ${date}`; 
+  } else return `Sorry, no entries found on ${date} :(`;
+}
