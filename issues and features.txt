@@ -1,1 +1,0 @@
-issue 01: date inconsistency problem (2-1-2021 and 02-01-2021) [function parseDate(date) { return parsedDate}]

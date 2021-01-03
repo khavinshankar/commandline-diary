@@ -1,9 +1,9 @@
+const { info } = require("console");
 const fs = require("fs");
 const path = require("path");
 
-const date = new Date();
-const today = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
-const now = `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+const today = new Date().toDateString().slice(4);
+const now = new Date().toTimeString().slice(0, 17);
 
 const args = process.argv.slice(2);
 
@@ -36,48 +36,50 @@ if (reply !== null && reply !== undefined) console.log(reply);
 
 function help() {
   const info = `Usage :-
-  Note: 
-    [] denotes optional parameters and all optional parameters have a default value (refer bellow)
-    date format is dd-mm-yyyy
-  
-  Commands:
-    $ diary add "entry content" [date] [time]    # Add an entry 
-    $ diary log [date] [index]                   # Log a specific entry or all entries on a date
-    $ diary del [date] [index]                   # Delete a specific entry or all entries on a date
-    $ diary cng date index "new content"         # Edit an entry
-    $ diary help                                 # Show usage
-  
-  Default Values:
-    [date]  - today // current day's date
-    [time]  - now   // current time
-    [index] - 0     // 0 means all
+    $ diary add "entry content" [date=today] [time=now]    # Add an entry 
+    $ diary log [date=today] [index=all]                   # Log a specific entry or all entries on a date
+    $ diary del [date=today] [index=all]                   # Delete a specific entry or all entries on a date
+    $ diary cng "new content" [date=today] [index=last]    # Edit an entry
+    $ diary help                                           # Show usage
   `;
   console.log(info);
 }
 
-function add(content, date = today, time = now) {
-  if (content === undefined) return `ERROR: content not availabe`;
+function parseDate(date) {
+  try {
+    return new Date(date).toDateString().slice(4);
+  } catch (err) {
+    console.log(`ERROR: Please double check the entered date!`);
+  }
+}
 
-  const [day, month, year] = date.split("-");
+function getFilePath(date, makeDir=false) {
+  date = parseDate(date);
+
+  const [month, day, year] = date.split(" ");
   const y_dir = path.join(__dirname, `${year}`);
   const m_dir = path.join(y_dir, `${month}`);
-  if (!fs.existsSync(y_dir)) fs.mkdirSync(y_dir);
-  if (!fs.existsSync(m_dir)) fs.mkdirSync(m_dir);
+  if (!fs.existsSync(y_dir) && makeDir) fs.mkdirSync(y_dir);
+  if (!fs.existsSync(m_dir) && makeDir) fs.mkdirSync(m_dir);
 
-  const file = path.join(m_dir, `${day}.txt`);
+  const filePath = path.join(m_dir, `${day}.txt`);
+  return filePath;  
+}
+
+function add(content, date=today, time=now) {
+  if (content === undefined) return `ERROR: content not availabe`;
+
+  const filePath = getFilePath(date, true);
   const message = `[${time}] ${content}\n`;
-  fs.appendFileSync(file, message);
+  fs.appendFileSync(filePath, message);
 
   return `Entry added successfully :)`;
 }
 
-function log(date = today, index = 0) {
-  const [day, month, year] = date.split("-");
-  const y_dir = path.join(__dirname, `${year}`);
-  const m_dir = path.join(y_dir, `${month}`);
-  const file = path.join(m_dir, `${day}.txt`);
-  if (fs.existsSync(file)) {
-    const entries = fs.readFileSync(file, "utf-8").trim().split("\n");
+function log(date=today, index = 0) {
+  const filePath = getFilePath(date);
+  if (fs.existsSync(filePath)) {
+    const entries = fs.readFileSync(filePath, "utf-8").trim().split("\n");
     if (index > entries.length) return `Error: index out of bounds`;
 
     let result = "";
@@ -90,40 +92,35 @@ function log(date = today, index = 0) {
   } else return `Sorry, no entries found on ${date} :(`;
 }
 
-function del(date = today, index = 0) {
-  const [day, month, year] = date.split("-");
-  const y_dir = path.join(__dirname, `${year}`);
-  const m_dir = path.join(y_dir, `${month}`);
-  const file = path.join(m_dir, `${day}.txt`);
-  if (fs.existsSync(file)) {
-    const entries = fs.readFileSync(file, "utf-8").trim().split("\n");
+function del(date=today, index = 0) {
+  const filePath = getFilePath(date);
+  if (fs.existsSync(filePath)) {
+    const entries = fs.readFileSync(filePath, "utf-8").trim().split("\n");
     if (index > entries.length) return `Error: index out of bounds`;
 
     if (index === 0) {
-      fs.unlinkSync(file);
+      fs.unlinkSync(filePath);
       return `Successfully deleted all entries on ${date}`;
     } else {
       entries.splice(index - 1, 1);
       const data = entries.join("\n");
-      fs.writeFileSync(file, data);
+      fs.writeFileSync(filePath, data);
       return `Successfully deleted the entry ${index} on ${date}`;
     }
   } else return `Sorry, no entries found on ${date} :(`;
 }
 
-function cng(date, index, new_content) {
-  const [day, month, year] = date.split("-");
-  const y_dir = path.join(__dirname, `${year}`);
-  const m_dir = path.join(y_dir, `${month}`);
-  const file = path.join(m_dir, `${day}.txt`);
-  if (fs.existsSync(file)) {
-    const entries = fs.readFileSync(file, "utf-8").trim().split("\n");
+function cng(new_content, date=today, index) {
+  const filePath = getFilePath(date);
+  if (fs.existsSync(filePath)) {
+    const entries = fs.readFileSync(filePath, "utf-8").trim().split("\n");
+    if(index === undefined || index === null) index = entries.length;
     if (index > entries.length) return `Error: index out of bounds`;
 
     const [time, content] = entries[index-1].split("] ");
     entries[index-1] = `${time}] ${new_content}`;
     const data = entries.join("\n");
-    fs.writeFileSync(file, data);
+    fs.writeFileSync(filePath, data);
     return `Successfully changed the entry ${index} on ${date}`; 
   } else return `Sorry, no entries found on ${date} :(`;
 }
